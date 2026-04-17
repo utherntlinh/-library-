@@ -11,17 +11,23 @@ bool DatabaseManager::Initialize() {
     if (!db->Connect()) {
         return false;
     }
-    
+
     if (!db->CreateSchema()) {
         return false;
     }
-    
+
     return true;
 }
 
 // ===== MEMBER OPERATIONS =====
 bool DatabaseManager::AddMember(const Member& member) {
-    members.push_back(member);
+    Member newMember = member;
+
+    if (newMember.MemberID == 0) {
+        newMember.MemberID = (int)members.size() + 1;
+    }
+
+    members.push_back(newMember);
     return true;
 }
 
@@ -73,12 +79,12 @@ bool DatabaseManager::DeleteMember(int id) {
 // ===== BOOK OPERATIONS =====
 bool DatabaseManager::AddBook(const Book& book) {
     Book newBook = book;
-    
+
     // Auto-assign BookID if = 0
     if (newBook.BookID == 0) {
         newBook.BookID = (int)books.size() + 1;
     }
-    
+
     // Auto-assign ISBN if empty (001, 002, 003, ...)
     if (newBook.ISBN.empty()) {
         int isbnNum = (int)books.size() + 1;
@@ -86,7 +92,7 @@ bool DatabaseManager::AddBook(const Book& book) {
         snprintf(isbnBuffer, sizeof(isbnBuffer), "%03d", isbnNum);
         newBook.ISBN = std::string(isbnBuffer);
     }
-    
+
     books.push_back(newBook);
     return true;
 }
@@ -151,7 +157,11 @@ bool DatabaseManager::DeleteBook(int id) {
 
 // ===== LOAN OPERATIONS =====
 bool DatabaseManager::AddLoan(const Loan& loan) {
-    loans.push_back(loan);
+    Loan newLoan = loan;
+    if (newLoan.LoanID == 0) {
+        newLoan.LoanID = (int)loans.size() + 1;
+    }
+    loans.push_back(newLoan);
     return true;
 }
 
@@ -197,7 +207,11 @@ bool DatabaseManager::GetActiveLoansByMemberID(int memberId, std::vector<Loan>& 
 
 // ===== FINE OPERATIONS =====
 bool DatabaseManager::AddFine(const Fine& fine) {
-    fines.push_back(fine);
+    Fine newFine = fine;
+    if (newFine.FineID == 0) {
+        newFine.FineID = (int)fines.size() + 1;
+    }
+    fines.push_back(newFine);
     return true;
 }
 
@@ -223,7 +237,7 @@ bool DatabaseManager::UpdateFineStatus(int fineId, const std::string& status) {
 
 bool DatabaseManager::GetUnpaidFinesByMemberID(int memberId, std::vector<Fine>& fineList) {
     fineList.clear();
-    
+
     std::vector<Loan> memberLoans;
     GetLoansByMemberID(memberId, memberLoans);
 
@@ -240,9 +254,30 @@ bool DatabaseManager::GetUnpaidFinesByMemberID(int memberId, std::vector<Fine>& 
     return true;
 }
 
+bool DatabaseManager::GetAllFinesByMemberID(int memberId, std::vector<Fine>& fineList) {
+    fineList.clear();
+
+    std::vector<Loan> memberLoans;
+    GetLoansByMemberID(memberId, memberLoans);
+
+    for (const auto& f : fines) {
+        for (const auto& l : memberLoans) {
+            if (l.LoanID == f.LoanID) {
+                fineList.push_back(f);
+                break;
+            }
+        }
+    }
+    return true;
+}
+
 // ===== NOTIFICATION OPERATIONS =====
 bool DatabaseManager::AddNotification(const Notification& notification) {
-    notifications.push_back(notification);
+    Notification newNotif = notification;
+    if (newNotif.NotificationID == 0) {
+        newNotif.NotificationID = (int)notifications.size() + 1;
+    }
+    notifications.push_back(newNotif);
     return true;
 }
 

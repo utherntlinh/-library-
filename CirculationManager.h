@@ -37,6 +37,9 @@ public:
     // Get total unpaid fines
     double GetTotalUnpaidFines(int memberId);
 
+    // Get total paid fines
+    double GetTotalPaidFines(int memberId);
+
 private:
     std::string GetCurrentDate();
     std::string GetDueDate();

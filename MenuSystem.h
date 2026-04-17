@@ -21,30 +21,31 @@ public:
 private:
     void DisplayMainMenu();
     void HandleMainMenuChoice(int choice);
-    
+
     void LibrarianMenu();
     void HandleLibrarianMenuChoice(int choice);
-    
+
     void MemberMenu();
     void HandleMemberMenuChoice(int choice);
-    
+
     // Librarian functions
     void ManageBooks();
     void ManageMembers();
     void IssueReturn();
     void FinesAndNotifications();
-    
+
     // Member functions
     void SearchCatalog();
     void ViewMyLoans();
     void ViewProfile();
     void UpdateProfile();
-    
+
     // Utility functions
     void DisplayCatalog(const std::vector<Book>& books);
     int GetInput(const std::string& prompt);
     std::string GetStringInput(const std::string& prompt);
     double GetDoubleInput(const std::string& prompt);
+    void PauseScreen();
 };
 
 #endif // MENU_SYSTEM_H

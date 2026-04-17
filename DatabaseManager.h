@@ -9,7 +9,7 @@
 class DatabaseManager {
 private:
     std::shared_ptr<Database> db;
-    
+
     // In-Memory Storage
     std::vector<Librarian> librarians;
     std::vector<Member> members;
@@ -52,6 +52,7 @@ public:
     bool GetFinesByLoanID(int loanId, std::vector<Fine>& fines);
     bool UpdateFineStatus(int fineId, const std::string& status);
     bool GetUnpaidFinesByMemberID(int memberId, std::vector<Fine>& fines);
+    bool GetAllFinesByMemberID(int memberId, std::vector<Fine>& fines);
 
     // Notification operations
     bool AddNotification(const Notification& notification);
