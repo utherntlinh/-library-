@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  library-management:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: library-management-system
+    environment:
+      - DATABASE_PATH=C:\app\LibraryManagement.db
+    volumes:
+      - library-data:/app/data
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+volumes:
+  library-data:
+    driver: local
