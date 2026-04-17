@@ -1,0 +1,41 @@
+name: CI - Build & Test
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        platform: [x64]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Restore NuGet packages
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: nuget restore LibraryManagementSystem.sln
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} LibraryManagementSystem.sln
+
+    - name: Check build artifacts
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        if exist "x64\${{ matrix.configuration }}\LibraryManagementSystem.exe" (
+          echo "Build successful!"
+          dir x64\${{ matrix.configuration }}\
+        ) else (
+          echo "Build failed - executable not found"
+          exit 1
+        )
