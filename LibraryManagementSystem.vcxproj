@@ -139,6 +139,16 @@
     <ClInclude Include="MenuSystem.h" />
     <ClInclude Include="Models.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include=".github\workflows\ci.yml" />
+    <None Include="CHANGELOG.md" />
+    <None Include="DOCKER_TROUBLESHOOTING.md" />
+    <None Include="INSTALLATION.md" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="REQUIREMENTS.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

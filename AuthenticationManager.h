@@ -1,43 +1,129 @@
-#ifndef AUTHENTICATION_MANAGER_H
-#define AUTHENTICATION_MANAGER_H
+#define _CRT_SECURE_NO_WARNINGS
+#include "AuthenticationManager.h"
+#include <iostream>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 
-#include "DatabaseManager.h"
-#include "Models.h"
-#include <memory>
-#include <string>
+AuthenticationManager::AuthenticationManager(std::shared_ptr<DatabaseManager> db)
+    : dbManager(db), isLibrarianLoggedIn(false), isMemberLoggedIn(false) {
+}
 
-class AuthenticationManager {
-private:
-    std::shared_ptr<DatabaseManager> dbManager;
-    Librarian currentLibrarian;
-    Member currentMember;
-    bool isLibrarianLoggedIn;
-    bool isMemberLoggedIn;
+AuthenticationManager::~AuthenticationManager() {}
 
-public:
-    AuthenticationManager(std::shared_ptr<DatabaseManager> db);
-    ~AuthenticationManager();
+bool AuthenticationManager::LoginAsLibrarian(const std::string& username, const std::string& password) {
+    if (!dbManager->AuthenticateLibrarian(username, password, currentLibrarian)) {
+        std::cout << "Invalid username or password!" << std::endl;
+        return false;
+    }
 
-    // Login methods
-    bool LoginAsLibrarian(const std::string& username, const std::string& password);
-    bool LoginAsMember(const std::string& email, const std::string& password);
-    bool RegisterNewMember(const std::string& name, const std::string& email, 
-                          const std::string& phone, const std::string& password);
+    isLibrarianLoggedIn = true;
+    std::cout << "Login successful! Welcome, " << currentLibrarian.Name << std::endl;
+    return true;
+}
 
-    // Logout methods
-    bool LogoutLibrarian();
-    bool LogoutMember();
+bool AuthenticationManager::LoginAsMember(const std::string& email, const std::string& password) {
+    Member member;
+    if (!dbManager->GetMemberByEmail(email, member)) {
+        std::cout << "Member not found!" << std::endl;
+        return false;
+    }
 
-    // Session check
-    bool IsLibrarianLoggedIn() const;
-    bool IsMemberLoggedIn() const;
+    // Check password
+    if (member.Password != password) {
+        std::cout << "Invalid password!" << std::endl;
+        return false;
+    }
 
-    // Get current user
-    Librarian GetCurrentLibrarian() const;
-    Member GetCurrentMember() const;
+    if (member.Status != "Active") {
+        std::cout << "Your account is " << member.Status << ". Please contact the librarian." << std::endl;
+        return false;
+    }
 
-    // Add default librarian
-    bool AddDefaultLibrarian();
-};
+    currentMember = member;
+    isMemberLoggedIn = true;
+    std::cout << "Login successful! Welcome, " << currentMember.Name << std::endl;
+    return true;
+}
 
-#endif // AUTHENTICATION_MANAGER_H
+bool AuthenticationManager::RegisterNewMember(const std::string& name, const std::string& email,
+    const std::string& phone, const std::string& password) {
+    // Check if email already exists
+    Member existingMember;
+    if (dbManager->GetMemberByEmail(email, existingMember)) {
+        std::cout << "Email already registered!" << std::endl;
+        return false;
+    }
+
+    // Generate expiry date (1 year from now)
+    time_t now = time(nullptr);
+    tm* timeinfo = localtime(&now);
+    timeinfo->tm_year += 1;
+    mktime(timeinfo);
+
+    std::ostringstream dateStream;
+    dateStream << std::put_time(timeinfo, "%Y-%m-%d");
+
+    Member newMember;
+    newMember.Name = name;
+    newMember.Email = email;
+    newMember.Phone = phone;
+    newMember.Password = password;
+    newMember.Status = "Active";
+    newMember.ExpiryDate = dateStream.str();
+
+    if (!dbManager->AddMember(newMember)) {
+        std::cout << "Failed to register member!" << std::endl;
+        return false;
+    }
+
+    std::cout << "Registration successful! Please login with your email." << std::endl;
+    return true;
+}
+
+bool AuthenticationManager::LogoutLibrarian() {
+    if (!isLibrarianLoggedIn) {
+        std::cout << "No librarian logged in!" << std::endl;
+        return false;
+    }
+
+    isLibrarianLoggedIn = false;
+    std::cout << "Logout successful!" << std::endl;
+    return true;
+}
+
+bool AuthenticationManager::LogoutMember() {
+    if (!isMemberLoggedIn) {
+        std::cout << "No member logged in!" << std::endl;
+        return false;
+    }
+
+    isMemberLoggedIn = false;
+    std::cout << "Logout successful!" << std::endl;
+    return true;
+}
+
+bool AuthenticationManager::IsLibrarianLoggedIn() const {
+    return isLibrarianLoggedIn;
+}
+
+bool AuthenticationManager::IsMemberLoggedIn() const {
+    return isMemberLoggedIn;
+}
+
+Librarian AuthenticationManager::GetCurrentLibrarian() const {
+    return currentLibrarian;
+}
+
+Member AuthenticationManager::GetCurrentMember() const {
+    return currentMember;
+}
+
+bool AuthenticationManager::AddDefaultLibrarian() {
+    Librarian defaultLibrarian;
+    defaultLibrarian.Name = "Admin";
+    defaultLibrarian.Username = "admin";
+    defaultLibrarian.Password = "admin123";
+
+    return dbManager->AddLibrarian(defaultLibrarian);
+}

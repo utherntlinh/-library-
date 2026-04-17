@@ -1,3 +1,5 @@
+version: '3.8'
+ 
 services:
   library:
     build:
@@ -9,6 +11,6 @@ services:
     tty: true          # -t (terminal output)
     volumes:
       - library_data:/app/data
-
+ 
 volumes:
   library_data:
