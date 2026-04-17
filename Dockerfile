@@ -1,31 +1,36 @@
-# Use official Windows Server Core image as base
-FROM mcr.microsoft.com/windows/servercore:ltsc2022 as builder
+# Multi-stage build - Build stage
+FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS builder
 
-# Install required tools
-RUN powershell -Command \
-    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile "vs_buildtools.exe" ; \
-    .\vs_buildtools.exe --quiet --norestart --nocache \
-    --installPath C:\BuildTools \
-    --add Microsoft.VisualStudio.Workload.VCTools \
-    --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64
+# Set working directory
+WORKDIR /build
 
-# Copy project files
-WORKDIR /app
+# Copy source files
 COPY . .
 
-# Build the project
-RUN powershell -Command \
-    $env:Path += ';C:\BuildTools\VC\Tools\MSVC\14.30.30705\bin\Hostx64\x64' ; \
-    msbuild LibraryManagementSystem.sln /p:Configuration=Release /p:Platform=x64
+# Build the project using MSBuild
+RUN cd /build && \
+    powershell -Command \
+    $env:Path += ';C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.39.33519\bin\Hostx64\x64' ; \
+    msbuild LibraryManagementSystem.sln /p:Configuration=Release /p:Platform=x64 /m
 
 # Runtime stage
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 WORKDIR /app
-COPY --from=builder /app/x64/Release/LibraryManagementSystem.exe .
 
-# Expose port if needed
+# Copy built executable from builder
+COPY --from=builder /build/x64/Release/LibraryManagementSystem.exe .
+COPY --from=builder /build/*.db .
+
+# Create data directory for database
+RUN mkdir /app/data
+
+# Expose port (informational)
 EXPOSE 5000
 
+# Set environment variables
+ENV DATABASE_PATH=C:\app\LibraryManagement.db
+
 # Run the application
-CMD ["LibraryManagementSystem.exe"]
+ENTRYPOINT ["LibraryManagementSystem.exe"]
+
