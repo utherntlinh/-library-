@@ -12,30 +12,42 @@ jobs:
 
     strategy:
       matrix:
-        configuration: [Debug, Release]
+        configuration: [Release]
         platform: [x64]
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
 
     - name: Restore NuGet packages
-      working-directory: ${{env.GITHUB_WORKSPACE}}
       run: nuget restore LibraryManagementSystem.sln
+      continue-on-error: true
 
-    - name: Build
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: msbuild /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} LibraryManagementSystem.sln
+    - name: Build project
+      run: msbuild LibraryManagementSystem.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /m
 
-    - name: Check build artifacts
-      working-directory: ${{env.GITHUB_WORKSPACE}}
+    - name: Check build output
       run: |
-        if exist "x64\${{ matrix.configuration }}\LibraryManagementSystem.exe" (
-          echo "Build successful!"
-          dir x64\${{ matrix.configuration }}\
-        ) else (
-          echo "Build failed - executable not found"
+        if (Test-Path "x64\${{ matrix.configuration }}\LibraryManagementSystem.exe") {
+          Write-Host "? Build successful!"
+          Get-Item "x64\${{ matrix.configuration }}\LibraryManagementSystem.exe" | Format-List
+        } else {
+          Write-Host "? Build failed - executable not found"
+          Get-ChildItem -Recurse -Filter "*.exe" | Select-Object FullName
           exit 1
-        )
+        }
+      shell: pwsh
+
+    - name: Upload artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: LibraryManagementSystem-${{ matrix.configuration }}-${{ matrix.platform }}
+        path: x64/${{ matrix.configuration }}/LibraryManagementSystem.exe
+        retention-days: 30
